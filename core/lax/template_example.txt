@@ -1,0 +1,16 @@
+{% if feed is defined %}{
+ "feed": "{{ feed.mp_name }}",
+"articles":[
+    {% for article in articles %}{"title": "{{ article.title }}", "pub_date": "{{ article.publish_time }}"}{% if not loop.last %},{% endif %}
+    {% endfor %}
+]
+}
+
+{% else %}欢迎您，{{ name }}！
+您的会员等级是：{{ level }}
+{% if level == 'VIP' %}  您是我们的尊贵VIP会员，享受专属优惠！{% endif %}
+{% if order is defined %}  您的订单信息：
+  订单号：{{ order.id }}
+  商品：{{ order.product }}
+  数量：{{ order.quantity }}
+  总价：{{ order.quantity * order.price }}{% endif %}{% endif %}

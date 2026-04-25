@@ -1,0 +1,155 @@
+{
+  "meta": {
+    "htmlTitle": "WeRSS 文档"
+  },
+  "common": {
+    "brandName": "WeRSS",
+    "docsSuffix": "文档"
+  },
+  "header": {
+    "openMenuAria": "打开导航",
+    "searchPlaceholder": "搜索文档",
+    "searchNoResults": "没有匹配的文档",
+    "changelogLink": "更新日志",
+    "sourceLink": "源码"
+  },
+  "sidebar": {
+    "closeOverlayAria": "关闭导航"
+  },
+  "home": {
+    "excludeNavSection": "开始使用",
+    "navOverview": "概览",
+    "navQuickStart": "快速开始",
+    "navDevelopers": "开发文档",
+    "navSource": "源码",
+    "heroEyebrow": "公众号采集、整理与分发文档",
+    "heroTitle": "WeRSS 使用与开发文档",
+    "heroLead": "WeRSS 负责采集公众号文章，再在此基础上做标签整理、热点发现、RSS 与消息推送。这些文档不罗列所有按钮，而是帮你按场景搞清楚：怎么部署、怎么用、想改代码该从哪看起。",
+    "actionPrimary": "开始上手",
+    "actionSecondary": "阅读概览",
+    "panelCapabilities": "WeRSS 能做什么",
+    "panelStart": "按角色开始"
+  },
+  "homeAudiences": [
+    {
+      "title": "独立开发者",
+      "description": "第一次用 WeRSS 的独立开发者或小团队，建议先照快速开始把项目跑起来，再按页面、接口和扩展方式往深处走。",
+      "path": "/docs/QUICK_START"
+    },
+    {
+      "title": "算法研究与模型工程",
+      "description": "重点看文章、标签、聚类、热点发现和数据模型，理解模型接入点、分析链路和结果落地方式。",
+      "path": "/docs/concepts"
+    },
+    {
+      "title": "内容运营与分发",
+      "description": "重点看文章工作台、订阅管理、标签、热点和消息任务，把抓取到的文章整理后分发到微信、钉钉、飞书或 Webhook。",
+      "path": "/docs/features/article-workbench"
+    },
+    {
+      "title": "技术负责人与产品决策者",
+      "description": "先看项目定位、核心流程、架构概览和关键功能，快速判断这套系统能做什么、边界在哪里、后续如何演进。",
+      "path": "/docs/overview"
+    }
+  ],
+  "homeCapabilities": [
+    "采集公众号文章并持续同步",
+    "生成 RSS 输出和结构化订阅源",
+    "做标签提取、聚类和文章过滤",
+    "发现最近几天的科技热点主题",
+    "把文章摘要主动推送到 Webhook"
+  ],
+  "docPage": {
+    "untitled": "无标题",
+    "sectionFallback": "文档",
+    "pagerPrev": "上一篇",
+    "pagerNext": "下一篇"
+  },
+  "toc": {
+    "eyebrow": "本页目录"
+  },
+  "app": {
+    "notFoundH1": "页面未找到",
+    "notFoundBody": "未找到「{path}」对应的文档。"
+  },
+  "nav": {
+    "sections": [
+      {
+        "title": "版本",
+        "items": [
+          { "title": "更新日志", "path": "/docs/dev/development-log", "label": "记录" }
+        ]
+      },
+      {
+        "title": "开始使用",
+        "items": [
+          { "title": "首页", "path": "/", "label": "入口" },
+          { "title": "项目概览", "path": "/docs/overview", "label": "说明" },
+          { "title": "快速开始", "path": "/docs/QUICK_START", "label": "环境" },
+          { "title": "部署指南", "path": "/docs/DEPLOYMENT", "label": "部署" }
+        ]
+      },
+      {
+        "title": "理解系统",
+        "items": [
+          { "title": "核心概念", "path": "/docs/concepts", "label": "术语" },
+          { "title": "核心流程", "path": "/docs/workflows", "label": "流程" },
+          { "title": "项目定位", "path": "/docs/idea", "label": "定位" }
+        ]
+      },
+      {
+        "title": "核心功能",
+        "items": [
+          { "title": "文章采集", "path": "/docs/features/article-collection", "label": "功能" },
+          { "title": "标签系统", "path": "/docs/features/tag-system", "label": "功能" },
+          { "title": "科技热点", "path": "/docs/features/hot-topics", "label": "功能" },
+          { "title": "RSS 与消息任务", "path": "/docs/features/rss-and-message-tasks", "label": "功能" },
+          { "title": "导出与存储", "path": "/docs/features/export-and-storage", "label": "功能" }
+        ]
+      },
+      {
+        "title": "功能与页面",
+        "items": [
+          { "title": "文章工作台", "path": "/docs/features/article-workbench", "label": "功能" },
+          { "title": "订阅管理", "path": "/docs/features/subscription-management", "label": "功能" },
+          { "title": "设置与运维", "path": "/docs/features/settings-and-ops", "label": "功能" },
+          { "title": "文章列表页", "path": "/docs/ui/articles", "label": "界面" },
+          { "title": "订阅管理页", "path": "/docs/ui/subscriptions", "label": "界面" },
+          { "title": "添加订阅", "path": "/docs/ui/add-subscription", "label": "界面" },
+          { "title": "标签管理", "path": "/docs/ui/tags", "label": "界面" },
+          { "title": "标签聚类", "path": "/docs/ui/tag-clusters", "label": "界面" },
+          { "title": "科技热点", "path": "/docs/ui/hot-topics", "label": "界面" },
+          { "title": "消息任务", "path": "/docs/ui/message-tasks", "label": "界面" },
+          { "title": "设置页", "path": "/docs/ui/settings", "label": "界面" },
+          { "title": "仪表板", "path": "/docs/ui/dashboard", "label": "界面" },
+          { "title": "系统信息", "path": "/docs/ui/sys-info", "label": "界面" },
+          { "title": "API 密钥", "path": "/docs/ui/api-keys", "label": "界面" },
+          { "title": "公众号管理", "path": "/docs/ui/wechat-mp-management", "label": "界面" }
+        ]
+      },
+      {
+        "title": "开发文档",
+        "items": [
+          { "title": "架构概览", "path": "/docs/dev/architecture-overview", "label": "开发" },
+          { "title": "后端结构", "path": "/docs/dev/backend-structure", "label": "开发" },
+          { "title": "前端结构", "path": "/docs/dev/frontend-structure", "label": "开发" },
+          { "title": "任务与调度", "path": "/docs/dev/jobs-and-schedulers", "label": "开发" },
+          { "title": "配置优先级", "path": "/docs/dev/configuration-and-precedence", "label": "开发" },
+          { "title": "数据模型", "path": "/docs/dev/data-model-overview", "label": "开发" },
+          { "title": "扩展指南", "path": "/docs/dev/extension-guide", "label": "开发" }
+        ]
+      },
+      {
+        "title": "参考资料",
+        "items": [
+          { "title": "文章查询 API", "path": "/docs/ARTICLE_QUERY_API", "label": "参考" },
+          { "title": "MCP 接入", "path": "/docs/MCP_REMOTE", "label": "参考" },
+          { "title": "uv 虚拟环境", "path": "/docs/UV_VENV_GUIDE", "label": "参考" },
+          { "title": "标签聚类检查清单", "path": "/docs/TAG_CLUSTER_CHECKLIST", "label": "清单" },
+          { "title": "路线图", "path": "/docs/ROADMAP", "label": "规划" },
+          { "title": "贡献指南", "path": "/docs/CONTRIBUTING", "label": "协作" }
+        ]
+      }
+    ]
+  }
+}

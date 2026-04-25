@@ -1,0 +1,210 @@
+app_name: ${APP_NAME:-werss}
+server:
+   #服务名称
+   name: ${SERVER_NAME:-werss}
+   #前端显示名称
+   web_name: ${WEB_NAME:-WeRSS}   #过期是否发送授权二维码通知 默认True
+   send_code: ${SEND_CODE:-True}
+   #二维通知标题
+   code_title: ${CODE_TITLE:-WeRSS}
+   #启动JOB定时任务，默认为True
+   enable_job: ${ENABLE_JOB:-True}
+   #代码修改自动重启服务，默认为False
+   auto_reload: ${AUTO_RELOAD:-False}
+   #最大线程数 默认2个线程，不建议超过4个线程
+   threads: ${THREADS:-2}
+   #通过web方式授权二维码 默认False 
+   auth_web: ${WERSS_AUTH_WEB:-False}
+
+
+#数据库连接 例如db:  mysql+pymysql://<username>:<password>@<host>/we-rss?charset=utf8mb4
+#PostgreSQL 连接示例: postgresql://<username>:<password>@<host>/<database>
+#需要注意数据库连接字符串的格式，如果是sqlite数据库，则使用sqlite:///路径的形式，如果是mysql数据库，
+#则使用mysql+pymysql://<username>:<password>@<host>/<database>?charset=<数据库编码>的形式
+db: ${DB:-sqlite:///data/db.db}
+#通知
+notice:
+  #通知方式，可选dingding、wechat、feishu、custom
+  dingding: "${DINGDING_WEBHOOK}"
+  wechat: "${WECHAT_WEBHOOK}"
+  feishu: "${FEISHU_WEBHOOK}"
+  custom: "${CUSTOM_WEBHOOK}"
+  
+secret: ${SECRET_KEY:-werss}
+user_agent: ${USER_AGENT:-Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36/WeRss}
+
+#定时任务执行每篇稿件间隔时间 单位秒 保守默认60s 允许值 1-60秒之间
+interval: ${SPAN_INTERVAL:-60}
+
+webhook:
+  #文章内容的发送格式(默认使用html格式，可选text、markdown)
+  content_format: ${WEBHOOK.CONTENT_FORMAT:-html}
+  
+#API服务端口
+port: ${PORT:-8001}
+#调试模式
+debug: ${DEBUG:-False}
+
+
+#最大页数 第一次添加 采集的页数默认1页（定时任务默认只爬取1页，如需更多页可手动设置）
+max_page: ${MAX_PAGE:-1}
+
+rss:
+  #RSS域名地址：如https://www.xxx.com/
+  base_url: ${RSS_BASE_URL:-}
+  #是否为本地RSS链接，默认True，当为False时直接出外部链接
+  local: ${RSS_LOCAL:-False}
+  #RSS标题
+  title: ${RSS_TITLE:-}
+  #RSS描述
+  description: ${RSS_DESCRIPTION:-}
+  #RSS封面
+  cover: ${RSS_COVER:-}
+  #是否显示全文，保守默认False，避免在RSS中分发第三方全文内容
+  full_context: ${RSS_FULL_CONTEXT:-False}
+  #是否添加封面图片，保守默认False，避免默认分发第三方图片资源
+  add_cover: ${RSS_ADD_COVER:-False}
+  #RSS正文是否启用 CDATA
+  cdata: ${RSS_CDATA:-False}
+  #RSS分页大小 默认10
+  page_size: ${RSS_PAGE_SIZE:-10}
+
+#登录会话有效时长 单位分钟 默认4320分钟 3天
+token_expire_minutes: ${TOKEN_EXPIRE_MINUTES:-4320}
+
+cache:
+  #缓存目录，默认为./data/cache
+  dir: ${CACHE.DIR:-./data/cache}
+
+article:
+  #是否真实删除文章，默认True（物理删除，真正从数据库删除），如果为False，则只标记为已删除状态（逻辑删除）
+  true_delete: ${ARTICLE.TRUE_DELETE:-True}
+  # 按入库时间等条件定期清理旧文章（需启动进程时 -job True 且 server.enable_job 为真）
+  retention:
+    # 是否启用定时清理，默认 false，避免升级后误删历史数据
+    enabled: ${ARTICLE_RETENTION_ENABLED:-false}
+    # 保留最近多少天的文章（按 basis 字段比较）
+    days: ${ARTICLE_RETENTION_DAYS:-7}
+    # 时间基准：created_at=入库时间；publish_time=微信发布时间（首版已实现 created_at）
+    basis: ${ARTICLE_RETENTION_BASIS:-created_at}
+    # cron 五段：分 时 日 月 周，默认每天 4:00
+    cron: ${ARTICLE_RETENTION_CRON:-0 4 * * *}
+    # 每批处理条数，避免长事务
+    batch_size: ${ARTICLE_RETENTION_BATCH_SIZE:-300}
+
+gather:
+  #是否采集内容  默认False
+  content: ${GATHER.CONTENT:-False}
+  #采集模式，web模式（可采集到发布链接)，api模式（可采集临时链接），app模式（采集最新消息）
+  model: ${GATHER.MODEL:-app}
+  #是否自动检查未采集文章内容，默认False
+  content_auto_check: ${GATHER.CONTENT_AUTO_CHECK:-False}
+  #自动检查未采集文章内容的时间间隔 单位秒默认59分钟 允许值 1-59分钟之间 默认59分钟
+  content_auto_interval: ${GATHER.CONTENT_AUTO_INTERVAL:-59}
+  #内容修正模式，默认web 允许值 web、api
+  content_mode: ${GATHER.CONTENT_MODE:-web}
+  #是否清理html标签 默认True 
+  clean_html: ${GATHER.CLEAN_HTML:-True}
+  #浏览器类型 默认firefox 允许值 firefox/edge/webkit
+  browser_type: ${BROWSER_TYPE:-firefox}
+#安全配置
+safe:
+    # 需要隐藏的配置信息，用逗号分隔 如：db,secret,token等 
+    hide_config: "${SAFE_HIDE_CONFIG:-db,secret,token,notice.wechat,notice.feishu,notice.dingding}"
+    # 授权加密KEY
+    lic_key: "${SAFE_LIC_KEY:-CHANGE_ME}"
+log:
+  #日志文件路径，默认为空字符串，表示不输出到文件。如果要输出到文件，可以指定一个路径如：/var/log/werss.log 如果为空就不纪录
+   file: ${LOG_FILE:-}
+  #日志级别，默认为INFO，可选DEBUG, INFO, WARNING, ERROR, CRITICAL
+   level: ${LOG_LEVEL:-INFO}
+export:
+   pdf: 
+    #是否启用PDF导出功能 默认False
+    enable: ${EXPORT_PDF:-False}
+    #PDF导出目录 默认./data/pdf
+    dir: ${EXPORT_PDF_DIR:-./data/pdf}
+   markdown:
+    #是否启用markdown导出功能 默认False
+    enable: ${EXPORT_MARKDOWN:-False}
+    #markdown导出目录 默认./data/markdown
+    dir: ${EXPORT_MARKDOWN_DIR:-./data/markdown}
+
+# 文章标签配置
+article_tag:
+  # 是否自动根据公众号关联的标签打标签
+  auto_assign_by_mp: ${ARTICLE_TAG_AUTO_ASSIGN_BY_MP:-True}
+  # 是否自动提取标签（基于文章内容）
+  auto_extract: ${ARTICLE_TAG_AUTO_EXTRACT:-False}
+  # 标签提取方式：ai（OpenAI 兼容 API）
+  extract_method: ${ARTICLE_TAG_EXTRACT_METHOD:-ai}
+  # 提取标签的最大数量
+  max_tags: ${ARTICLE_TAG_MAX_TAGS:-5}
+  # 自定义 AI 标签提取 prompt（空则使用内置模板；亦可在「设置」中编辑并落库到 config_management）
+  ai_prompt: ${ARTICLE_TAG_AI_PROMPT:-}
+  # AI 提取配置（需要配置 OpenAI 兼容 API，支持 DeepSeek、Qwen3、OpenAI 等）
+  ai:
+    # 是否自动创建不存在的标签
+    auto_create: ${ARTICLE_TAG_AI_AUTO_CREATE:-True}
+
+# OpenAI 兼容 API 配置（用于标签提取，支持 DeepSeek、Qwen3、OpenAI 等）
+openai:
+  # API Key（必填，用于 AI 标签提取功能）
+  # 支持 DeepSeek、Qwen、OpenAI 等兼容 API
+  # OpenAI: https://api.openai.com/v1
+  # Qwen3: https://dashscope.aliyuncs.com/compatible-mode/v1
+  api_key: ${OPENAI_API_KEY:-}
+  # API Base URL（默认：https://api.openai.com/v1）
+  # Qwen3 示例: https://dashscope.aliyuncs.com/compatible-mode/v1
+  base_url: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+  # 模型名称（默认：gpt-4o）
+  # Qwen3 示例: qwen-plus（使用 Qwen3 时会自动禁用思考功能）
+  # OpenAI 示例: gpt-4o
+  model: ${OPENAI_MODEL:-gpt-4o}
+
+# 标签语义聚类（可选）
+tag_cluster:
+  enabled: ${TAG_CLUSTER_ENABLED:-False}
+  min_article_count: ${TAG_CLUSTER_MIN_ARTICLE_COUNT:-3}
+  sample_article_limit: ${TAG_CLUSTER_SAMPLE_ARTICLE_LIMIT:-10}
+  co_tag_limit: ${TAG_CLUSTER_CO_TAG_LIMIT:-8}
+  similarity_threshold: ${TAG_CLUSTER_SIMILARITY_THRESHOLD:-0.78}
+  max_similar_tags: ${TAG_CLUSTER_MAX_SIMILAR_TAGS:-10}
+  graph_top_k: ${TAG_CLUSTER_GRAPH_TOP_K:-8}
+  embedding_weight: ${TAG_CLUSTER_EMBEDDING_WEIGHT:-0.6}
+  ngram_weight: ${TAG_CLUSTER_NGRAM_WEIGHT:-0.4}
+  rebuild_batch_size: ${TAG_CLUSTER_REBUILD_BATCH_SIZE:-100}
+  embedding:
+    provider: ${TAG_CLUSTER_EMBEDDING_PROVIDER:-bigmodel}
+    dimensions: ${TAG_CLUSTER_EMBEDDING_DIMENSIONS:-512}
+    bigmodel:
+      api_key: ${BIGMODEL_API_KEY:-}
+      base_url: ${BIGMODEL_BASE_URL:-https://open.bigmodel.cn/api/paas/v4}
+      model: ${BIGMODEL_EMBEDDING_MODEL:-embedding-3}
+    doubao:
+      api_key: ${DOUBAO_API_KEY:-}
+      base_url: ${DOUBAO_BASE_URL:-}
+      model: ${DOUBAO_EMBEDDING_MODEL:-}
+
+# MinIO 对象存储配置（可选；仅在确认有权保存相关图片时开启）
+minio:
+  # 是否启用MinIO图片上传功能，保守默认False
+  enabled: ${MINIO_ENABLED:-False}
+  # 是否在 MinIO 可用时将微信侧图片转存到对象存储（正文、封面、公众号头像等）；保守默认False
+  store_article_images: ${MINIO_STORE_ARTICLE_IMAGES:-False}
+  # MinIO服务地址，例如：localhost:9000 或 minio.example.com:9000
+  endpoint: ${MINIO_ENDPOINT:-localhost:9000}
+  # MinIO访问密钥
+  access_key: ${MINIO_ACCESS_KEY:-minioadmin}
+  # MinIO密钥
+  secret_key: ${MINIO_SECRET_KEY:-minioadmin}
+  # 存储桶名称，默认articles
+  bucket: ${MINIO_BUCKET:-articles}
+  # 是否使用HTTPS，默认False
+  secure: ${MINIO_SECURE:-False}
+  # 公开访问URL，用于生成图片访问链接，例如：http://localhost:9000 或 https://cdn.example.com
+  public_url: ${MINIO_PUBLIC_URL:-http://localhost:9000}
+  # 是否使用 presigned URL（临时访问链接，7天有效期）
+  # 如果 bucket 未设置为公开读取，设置为 true 使用 presigned URL
+  # 注意：presigned URL 有过期时间，不适合长期存储的场景
+  use_presigned_url: ${MINIO_USE_PRESIGNED_URL:-False}

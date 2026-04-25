@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>错误检测与修复面板</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    
+    .controls {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .button {
+      background: #165DFF;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+      font-size: 14px;
+    }
+    
+    .button:hover {
+      background: #0e42d2;
+    }
+    
+    .button.danger {
+      background: #f53f3f;
+    }
+    
+    .button.danger:hover {
+      background: #cb2634;
+    }
+    
+    .button.success {
+      background: #00b42a;
+    }
+    
+    .button.success:hover {
+      background: #009a29;
+    }
+    
+    .button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .status {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      margin-left: 10px;
+    }
+    
+    .status.running {
+      background: #ff7d00;
+      color: white;
+    }
+    
+    .status.success {
+      background: #00b42a;
+      color: white;
+    }
+    
+    .status.error {
+      background: #f53f3f;
+      color: white;
+    }
+    
+    .errors-panel {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .error-item {
+      border-left: 4px solid #f53f3f;
+      padding: 15px;
+      margin-bottom: 15px;
+      background: #fff7f7;
+      border-radius: 4px;
+    }
+    
+    .error-item.warning {
+      border-left-color: #ff7d00;
+      background: #fff9f0;
+    }
+    
+    .error-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .error-type {
+      font-weight: bold;
+      color: #333;
+    }
+    
+    .error-message {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 10px;
+      word-break: break-word;
+    }
+    
+    .error-file {
+      color: #999;
+      font-size: 12px;
+      font-family: monospace;
+    }
+    
+    .fix-button {
+      background: #00b42a;
+      color: white;
+      border: none;
+      padding: 5px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    
+    .fix-button:hover {
+      background: #009a29;
+    }
+    
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .summary-card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .summary-card h3 {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    
+    .summary-card .number {
+      font-size: 32px;
+      font-weight: bold;
+      color: #333;
+    }
+    
+    .summary-card.error .number {
+      color: #f53f3f;
+    }
+    
+    .summary-card.warning .number {
+      color: #ff7d00;
+    }
+    
+    .summary-card.total .number {
+      color: #165DFF;
+    }
+    
+    .log {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 15px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      margin-top: 10px;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 错误检测与修复面板</h1>
+    
+    <div class="controls">
+      <button class="button" id="runTestsBtn" onclick="runTests()">运行测试</button>
+      <button class="button success" id="applyFixesBtn" onclick="applyFixes()">应用自动修复</button>
+      <button class="button" onclick="refreshReport()">刷新报告</button>
+      <span id="status" class="status" style="display: none;"></span>
+    </div>
+    
+    <div class="summary" id="summary" style="display: none;">
+      <div class="summary-card total">
+        <h3>总计</h3>
+        <div class="number" id="total">0</div>
+      </div>
+      <div class="summary-card error">
+        <h3>错误</h3>
+        <div class="number" id="errors">0</div>
+      </div>
+      <div class="summary-card warning">
+        <h3>警告</h3>
+        <div class="number" id="warnings">0</div>
+      </div>
+    </div>
+    
+    <div class="errors-panel">
+      <h2>错误列表</h2>
+      <div id="errors-list"></div>
+    </div>
+  </div>
+  
+  <script>
+    async function runTests() {
+      const btn = document.getElementById('runTestsBtn');
+      const status = document.getElementById('status');
+      const errorsList = document.getElementById('errors-list');
+      
+      btn.disabled = true;
+      status.textContent = '运行中...';
+      status.className = 'status running';
+      status.style.display = 'inline-block';
+      
+      errorsList.innerHTML = '<div class="log">正在运行测试，请稍候...</div>';
+      
+      try {
+        // 使用 fetch 调用本地 API（需要后端支持）
+        // 或者直接使用 Playwright 的测试结果
+        const response = await fetch('/test-results/auto-fix-report.json');
+        
+        // 如果报告不存在，提示用户先运行测试
+        if (!response.ok) {
+          errorsList.innerHTML = '<p style="color: #ff7d00; padding: 20px;">⚠️ 请先在终端运行: pnpm run test:auto-fix</p>';
+          status.textContent = '请先运行测试';
+          status.className = 'status error';
+          btn.disabled = false;
+          return;
+        }
+        
+        // 等待一下让测试完成
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        status.textContent = '测试完成';
+        status.className = 'status success';
+        setTimeout(() => {
+          refreshReport();
+          status.style.display = 'none';
+          btn.disabled = false;
+        }, 1000);
+      } catch (error) {
+        errorsList.innerHTML = `<div class="log">错误: ${error.message}\n\n请在终端运行: pnpm run test:auto-fix</div>`;
+        status.textContent = '测试失败';
+        status.className = 'status error';
+        btn.disabled = false;
+      }
+    }
+    
+    async function applyFixes() {
+      const btn = document.getElementById('applyFixesBtn');
+      const status = document.getElementById('status');
+      
+      btn.disabled = true;
+      status.textContent = '应用修复中...';
+      status.className = 'status running';
+      status.style.display = 'inline-block';
+      
+      try {
+        // 提示用户在终端运行
+        alert('请在终端运行以下命令应用修复:\n\npnpm run fix:apply\n\n或者:\n\npnpm run test:auto-fix');
+        
+        status.textContent = '请查看终端';
+        status.className = 'status warning';
+        setTimeout(() => {
+          refreshReport();
+          status.style.display = 'none';
+          btn.disabled = false;
+        }, 2000);
+      } catch (error) {
+        status.textContent = '修复失败';
+        status.className = 'status error';
+        btn.disabled = false;
+      }
+    }
+    
+    async function refreshReport() {
+      try {
+        const response = await fetch('/test-results/auto-fix-report.json');
+        
+        if (!response.ok) {
+          document.getElementById('errors-list').innerHTML = 
+            '<p style="color: #ff7d00; padding: 20px;">⚠️ 未找到测试报告<br><br>请在终端运行:<br><code style="background: #f0f0f0; padding: 5px; border-radius: 4px;">pnpm run test:auto-fix</code></p>';
+          document.getElementById('summary').style.display = 'none';
+          return;
+        }
+        
+        const report = await response.json();
+        
+        // 更新摘要
+        document.getElementById('summary').style.display = 'grid';
+        document.getElementById('total').textContent = report.summary.total;
+        document.getElementById('errors').textContent = report.summary.errors;
+        document.getElementById('warnings').textContent = report.summary.warnings;
+        
+        // 显示错误列表
+        const errorsList = document.getElementById('errors-list');
+        errorsList.innerHTML = '';
+        
+        if (report.errors.length === 0) {
+          errorsList.innerHTML = '<p style="color: #00b42a; padding: 20px; font-size: 18px;">✅ 没有发现错误！</p>';
+          return;
+        }
+        
+        report.errors.forEach((error, index) => {
+          const errorDiv = document.createElement('div');
+          errorDiv.className = `error-item ${error.severity === 'warning' ? 'warning' : ''}`;
+          
+          errorDiv.innerHTML = `
+            <div class="error-header">
+              <span class="error-type">${error.type || '未知错误'}</span>
+            </div>
+            <div class="error-message">${escapeHtml(error.message)}</div>
+            ${error.file ? `<div class="error-file">${escapeHtml(error.file)}${error.line ? `:${error.line}` : ''}</div>` : ''}
+            ${error.fix ? `<div style="margin-top: 10px; color: #00b42a; font-size: 12px;">💡 ${escapeHtml(error.fix)}</div>` : ''}
+          `;
+          
+          errorsList.appendChild(errorDiv);
+        });
+      } catch (error) {
+        document.getElementById('errors-list').innerHTML = 
+          '<p style="color: #f53f3f; padding: 20px;">❌ 无法加载报告<br><br>请确保已运行测试:<br><code style="background: #f0f0f0; padding: 5px; border-radius: 4px;">pnpm run test:auto-fix</code></p>';
+      }
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // 页面加载时自动刷新
+    window.addEventListener('load', () => {
+      refreshReport();
+      // 每10秒自动刷新
+      setInterval(refreshReport, 10000);
+    });
+  </script>
+</body>
+</html>

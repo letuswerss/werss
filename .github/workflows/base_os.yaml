@@ -1,0 +1,22 @@
+name: Docker Base Image
+on:
+  push:
+    branches:
+      - main
+    paths:  # 仅在指定文件变化时触发（可选）
+      - 'Dockerfiles/py38/Dockerfile'
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        run: echo  ${{secrets.TOKEN}} | docker login ghcr.io -u  ${{github.actor}} --password-stdin
+      - name: Build Docker Image
+        run: |
+          cd Dockerfiles/py38
+          docker build -t ghcr.io/letuswerss/python38:latest .
+      - name: Push Docker Image
+        run: docker push  ghcr.io/letuswerss/python38:latest

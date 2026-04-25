@@ -1,0 +1,152 @@
+# ==================== WeRSS 完整独立栈 ====================
+# 包含 Traefik + PostgreSQL + MinIO + WeRSS
+# 数据库默认使用 SQLite，如需 PostgreSQL 可通过 DB 环境变量切换：
+#   cp .env.example .env   # 按需修改域名、密码和 API Key
+#   docker compose up -d
+#
+# 如果你已有外部数据库和 MinIO，或想仅接入现有基础设施，请改用 docker-compose.app-only.yml。
+# 详细说明见 docs/DEPLOYMENT.md
+
+services:
+  # ==================== Traefik 反向代理 ====================
+  traefik:
+    image: traefik:v3.3
+    container_name: ${TRAEFIK_CONTAINER_NAME:-werss-traefik}
+    restart: unless-stopped
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
+      - "--ping=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@example.com}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/etc/traefik/acme/acme.json"
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+      - "--log.level=${TRAEFIK_LOG_LEVEL:-WARN}"
+    ports:
+      - "${TRAEFIK_HTTP_PORT:-80}:80"
+      - "${TRAEFIK_HTTPS_PORT:-443}:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./data/traefik/acme:/etc/traefik/acme
+      - ./data/traefik/dynamic:/etc/traefik/dynamic
+    networks:
+      - werss_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/ping >/dev/null 2>&1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==================== PostgreSQL ====================
+  postgres:
+    image: postgres:16-alpine
+    container_name: ${POSTGRES_CONTAINER_NAME:-werss-postgres}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-werss_db}
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-admin123}
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+      TZ: Asia/Shanghai
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=200"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "work_mem=4MB"
+    volumes:
+      - ./data/postgres-data:/var/lib/postgresql/data
+      - ./init-db:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-werss_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - werss_net
+
+  # ==================== MinIO 对象存储 ====================
+  minio:
+    image: minio/minio:latest
+    container_name: ${MINIO_CONTAINER_NAME:-werss-minio}
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-admin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-admin123}
+      - MINIO_BROWSER_REDIRECT_URL=http://localhost:9001
+      - MINIO_SERVER_URL=http://localhost:9000
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - ./data/minio-data:/data
+    networks:
+      - werss_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ==================== WeRSS 应用 ====================
+  werss:
+    build:
+      context: .
+      dockerfile: Dockerfile.cn
+      args:
+        - BROWSER_TYPE=${BROWSER_TYPE:-firefox}
+    container_name: ${WERSS_CONTAINER_NAME:-werss}
+    restart: unless-stopped
+    environment:
+      - DB=${DB:-sqlite:///data/db.db}
+      - PORT=8001
+      - DEBUG=${DEBUG:-False}
+      - AUTO_RELOAD=${AUTO_RELOAD:-False}
+      - WERSS_USERNAME=${WERSS_USERNAME:-admin}
+      - WERSS_PASSWORD=${WERSS_PASSWORD:-admin123}
+      - BROWSER_TYPE=${BROWSER_TYPE:-firefox}
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-admin}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-admin123}
+      - MINIO_SECURE=False
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ${WERSS_DATA_DIR:-./data/werss-data}:/app/data
+      - ${WERSS_LOGS_DIR:-./logs}:/app/logs
+    depends_on:
+      traefik:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - werss_net
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.werss.rule=Host(`${WERSS_HOST:-localhost}`)
+      - traefik.http.routers.werss.entrypoints=websecure
+      - traefik.http.routers.werss.tls.certresolver=letsencrypt
+      - traefik.http.services.werss.loadbalancer.server.port=8001
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  werss_net:
+    driver: bridge
+    name: werss_net

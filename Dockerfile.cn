@@ -1,0 +1,127 @@
+# 多阶段构建：第一阶段 - 前端构建（使用国内镜像源）
+FROM --platform=$BUILDPLATFORM node:20.18.0-slim AS frontend-builder
+
+# 设置工作目录
+WORKDIR /app
+
+# 配置 npm 使用国内镜像源（淘宝镜像）
+RUN npm config set registry https://registry.npmmirror.com
+
+# 安装 pnpm
+RUN npm install -g pnpm
+
+# 配置 pnpm 使用国内镜像源
+RUN pnpm config set registry https://registry.npmmirror.com
+
+# 复制前端依赖文件
+COPY web_ui/package.json web_ui/pnpm-lock.yaml* web_ui/
+
+# 安装前端依赖
+WORKDIR /app/web_ui
+RUN pnpm install --no-frozen-lockfile
+
+# 复制前端源代码
+COPY web_ui/ .
+
+# 构建前端
+RUN pnpm build
+
+# 多阶段构建：第二阶段 - Python 应用（使用国内镜像源）
+FROM --platform=$BUILDPLATFORM docker.1ms.run/python:3.11-slim
+
+# 设置环境变量
+ENV DEBIAN_FRONTEND=noninteractive \
+    TZ=Asia/Shanghai \
+    PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
+    PIP_DEFAULT_TIMEOUT=100
+
+# 配置 Debian 国内镜像源（使用阿里云镜像）
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
+    sed -i 's|http://deb.debian.org|http://mirrors.aliyun.com|g' /etc/apt/sources.list 2>/dev/null || \
+    echo "deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free non-free-firmware" > /etc/apt/sources.list && \
+    echo "deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free non-free-firmware" >> /etc/apt/sources.list && \
+    echo "deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free non-free-firmware" >> /etc/apt/sources.list
+
+# 安装系统依赖（最小化，只安装运行时需要的）
+# 配置 procps 不尝试应用 sysctl 配置（避免 Docker 容器中的权限警告）
+RUN echo 'procps procps/apply_sysctl boolean false' | debconf-set-selections && \
+    apt-get update && apt-get install -y --no-install-recommends \
+    wget \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# 安装 uv（快速的 Python 包管理器）
+RUN pip install uv --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# 设置时区
+RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+
+# 设置工作目录
+WORKDIR /app
+
+# 复制依赖文件
+# 注意：Dockerfile 使用 requirements.txt 安装依赖
+# pyproject.toml 是项目元数据（用于 pip install -e . 或 uv pip install .）
+# 但 Docker 构建时使用 requirements.txt，确保两者保持同步
+COPY requirements.txt .
+
+# 安装 Python 依赖（在构建时安装，避免运行时问题）
+# 优先使用国内镜像源，如果失败则使用默认源
+RUN uv pip install --system -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple || \
+    pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# 复制后端代码（排除 web_ui，因为前端已经构建完成）
+COPY config.example.yaml config.yaml
+COPY apis/ apis/
+COPY core/ core/
+COPY driver/ driver/
+COPY tools/ tools/
+COPY jobs/ jobs/
+COPY schemas/ schemas/
+COPY migrations/ migrations/
+COPY web.py .
+COPY main.py .
+COPY job.py .
+COPY tool.py .
+COPY init_sys.py .
+COPY install.sh .
+COPY start.sh .
+
+# 从第一阶段复制前端构建产物
+COPY --from=frontend-builder /app/web_ui/dist ./static
+
+# 安装 Playwright 浏览器（Docker 环境默认安装）
+# 注意：Playwright 是 Python 包，需要先安装 Python 依赖
+# 使用 ARG 接收构建参数，ENV 设置运行时环境变量
+ARG BROWSER_TYPE=firefox
+ARG TARGETARCH
+# 根据架构选择 Playwright 下载源：
+# - ARM 架构 (arm64) 使用官方源，因为国内镜像缺少 ARM 版本
+# - AMD64 架构使用国内镜像源加速下载
+ENV BROWSER_TYPE=${BROWSER_TYPE} \
+    PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT=300000
+# 根据架构选主源；npmmirror 常滞后于新版 Playwright（如 debian-13 包 404），失败则回退官方 CDN
+RUN export PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT=300000; \
+    if [ "$TARGETARCH" = "arm64" ]; then \
+        echo "检测到 ARM64，Playwright 使用官方源"; \
+        export PLAYWRIGHT_DOWNLOAD_HOST=https://playwright.azureedge.net; \
+    else \
+        echo "检测到 AMD64，先尝试 npmmirror"; \
+        export PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright; \
+    fi && \
+    echo "PLAYWRIGHT_DOWNLOAD_HOST=$PLAYWRIGHT_DOWNLOAD_HOST" && \
+    ( python3 -m playwright install ${BROWSER_TYPE} --with-deps || \
+      ( echo "主源失败（镜像未同步时常见），改用 playwright.azureedge.net 重试..." && \
+        PLAYWRIGHT_DOWNLOAD_HOST=https://playwright.azureedge.net python3 -m playwright install ${BROWSER_TYPE} --with-deps ) \
+    ) || (echo "Playwright 浏览器仍未安装成功，启动时 install.sh 会再试" && true)
+
+# 设置脚本权限
+RUN chmod +x install.sh start.sh
+
+# 暴露端口
+EXPOSE 8001
+
+# 启动命令
+CMD ["bash", "start.sh"]
+

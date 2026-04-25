@@ -1,0 +1,32 @@
+# ==================== 本地开发覆盖 ====================
+# 在完整栈（含 Traefik）基础上启用调试模式，容器名加 -dev 后缀，数据目录隔离，
+# 并为 werss 映射宿主机 8001 端口便于直连。
+#
+# 使用方式：
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+#
+# 注意：ARM 架构设备（如 MacBook M1/M2/M3, Mac Mini M4）
+# 请确保使用 Dockerfile.cn 构建，它会自动检测架构并选择正确的 Playwright 下载源
+
+services:
+  traefik:
+    container_name: werss-traefik-dev
+
+  postgres:
+    container_name: werss-postgres-dev
+    volumes:
+      - ./data/postgres-data-dev:/var/lib/postgresql/data
+
+  minio:
+    container_name: werss-minio-dev
+    volumes:
+      - ./data/minio-data-dev:/data
+
+  werss:
+    container_name: werss-dev
+    ports:
+      - "${WERSS_PUBLISH_PORT:-8001}:8001"
+    environment:
+      - DEBUG=True
+    volumes:
+      - ./data/werss-data-dev:/app/data

@@ -1,0 +1,42 @@
+__pycache__
+*.xml
+*.tmp
+config.yaml
+dist/
+build/
+*.pyc
+dock_build.bat
+./db.db
+.vscode/
+*.log
+item
+static/cache
+static/wx_qrcode.png
+
+# Web UI 构建产物（`web_ui` 执行 pnpm build 后由 scripts/copy-build 复制到 static/；Dockerfile 也会生成）
+# 勿提交，避免与源码不同步、diff  noise、合并冲突
+static/assets/
+static/index.html
+static/error-dashboard.html
+static/logo.svg
+data
+build
+dist
+data1
+doc2pdf/*.docx
+doc2pdf/*.pdf
+demo.txt
+env/
+.env
+*.env
+.venv
+.env.back
+
+# 本地误拷/备份的整仓副本，勿跟踪
+werss-sync/
+
+# Mac mini 本地部署文件（个人专用，不提交）
+docker-compose.mac.yml
+.env.mac
+feeds_export.json
+init-db/create-dbs.sql

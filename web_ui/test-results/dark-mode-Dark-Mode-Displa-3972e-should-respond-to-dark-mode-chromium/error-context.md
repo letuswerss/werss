@@ -1,0 +1,54 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e4]:
+    - generic [ref=e9]:
+      - generic [ref=e10]:
+        - img [ref=e12]
+        - generic [ref=e15]: Heat Analysis System
+      - heading "微信公众号热度分析系统" [level=1] [ref=e16]
+      - paragraph [ref=e17]: 打破信息围墙，建立面向 AI 治理的实时医学知识感知前哨。
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - img [ref=e21]
+          - generic [ref=e23]:
+            - heading "实时感知" [level=4] [ref=e24]
+            - paragraph [ref=e25]: 毫秒级同步全网医学动态
+        - generic [ref=e26]:
+          - img [ref=e28]
+          - generic [ref=e30]:
+            - heading "内容品控" [level=4] [ref=e31]
+            - paragraph [ref=e32]: AI 驱动的信噪比深度治理
+        - generic [ref=e33]:
+          - img [ref=e35]
+          - generic [ref=e38]:
+            - heading "RSS 联通" [level=4] [ref=e39]
+            - paragraph [ref=e40]: 标准化协议分发核心事实
+        - generic [ref=e41]:
+          - img [ref=e43]
+          - generic [ref=e46]:
+            - heading "无缝入库" [level=4] [ref=e47]
+            - paragraph [ref=e48]: 对接 Knoss 炼金实验室
+    - generic [ref=e49]:
+      - generic [ref=e50]: Version 1.1.2 · Enterprise Edition
+      - generic [ref=e51]:
+        - generic [ref=e52]:
+          - heading "欢迎回来" [level=2] [ref=e53]
+          - paragraph [ref=e54]: 请输入您的凭据以访问控制台
+        - generic [ref=e55]:
+          - generic [ref=e56]:
+            - text: 管理员账号
+            - generic [ref=e57]:
+              - img [ref=e58]
+              - textbox "Account username" [ref=e61]
+          - generic [ref=e62]:
+            - text: 访问密码
+            - generic [ref=e63]:
+              - img [ref=e64]
+              - textbox "Password" [ref=e67]
+          - button "进入系统" [ref=e68] [cursor=pointer]
+        - paragraph [ref=e70]: © 2026 WeRSS 微信助手实验室. 版权所有.
+  - region "Notifications (F8)":
+    - list
+```

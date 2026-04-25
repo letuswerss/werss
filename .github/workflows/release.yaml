@@ -1,0 +1,18 @@
+name: Release Zip
+on:
+   push:
+    tags:
+      "v*.*.*"  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+        # 添加构建项目的步骤
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          token: ${{ secrets.GitToken }}
+          # 其他可选配置，如发布说明文件、附加文件等

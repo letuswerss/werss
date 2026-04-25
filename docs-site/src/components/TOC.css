@@ -1,0 +1,82 @@
+/* 参考 OpenAI 文档：左侧整条浅灰线 + 当前节黑色竖段叠在灰线上，未选为中灰、选中为近黑 */
+.toc {
+  position: sticky;
+  top: 88px;
+  max-height: calc(100vh - 100px);
+  overflow: auto;
+  padding-bottom: 1.5rem;
+}
+
+.toc__eyebrow {
+  margin: 0 0 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.toc__list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 0.875rem; /* 文字相对竖线内缩 */
+  border-left: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.toc__item {
+  position: relative;
+  margin: 0;
+  padding: 0;
+}
+
+.toc__item--level-3 {
+  padding-left: 0.5rem;
+}
+
+.toc__link {
+  position: relative;
+  display: block;
+  color: #737373;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  text-decoration: none;
+  font-weight: 400;
+  padding: 0.1rem 0;
+  transition: color 0.12s ease;
+}
+
+.toc__link:hover {
+  color: var(--text);
+}
+
+.toc__link--active {
+  color: var(--text);
+  font-weight: 400; /* OpenAI 当前项通常不加粗，只依靠颜色+竖线 */
+}
+
+/* 与灰线同位置叠一层更粗的黑色条（覆盖在 border-left 上方） */
+.toc__link--active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.05em;
+  width: 2px;
+  height: calc(100% - 0.1em);
+  background: #0a0a0a;
+  border-radius: 1px;
+  transform: translateX(calc(-0.875rem - 1px));
+  pointer-events: none;
+}
+
+.toc__item--level-3 .toc__link--active::before {
+  transform: translateX(calc(-0.875rem - 0.5rem - 1px));
+}
+
+@media (max-width: 1180px) {
+  .toc {
+    display: none;
+  }
+}

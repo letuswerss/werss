@@ -1,0 +1,68 @@
+# 数据目录
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# 前端开发文件（构建时会单独处理）
+web_ui/node_modules/
+web_ui/dist/
+web_ui/.vite/
+web_ui/.cache/
+
+# Git 相关
+.git/
+.gitignore
+.gitattributes
+
+# IDE 配置
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 文档和脚本
+README.md
+*.md
+scripts/
+compose/
+Dockerfile/
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# 环境变量和配置
+.env
+.env.local
+.env.*.local
+config.yaml
+!config.example.yaml
+
+# 日志文件
+*.log
+logs/
+
+# 临时文件
+*.tmp
+*.temp
+.cache/
+tmp/
+temp/
+
+# 字体文件（如果不需要）
+fonts/
+
+# 其他
+.DS_Store
+Thumbs.db

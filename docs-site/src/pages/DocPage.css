@@ -1,0 +1,252 @@
+.doc-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 720px) var(--toc-width);
+  justify-content: space-between;
+  gap: 40px;
+  padding-top: 32px;
+}
+
+.doc-page__main {
+  min-width: 0;
+}
+
+.doc-page__meta {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 24px;
+}
+
+.doc-page__section {
+  margin: 0 0 8px;
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.doc-page__title {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+/* 首段摘要：由 ReactMarkdown 渲染，支持 **加粗**、行内 code 等 */
+.doc-page__summary {
+  margin: 12px 0 0;
+  max-width: 640px;
+  color: var(--text-muted);
+  font-size: 16px;
+  line-height: 1.6;
+  font-weight: 400;
+}
+
+/* 覆盖 .doc-page__prose p 的 margin，避免摘要区多出一倍段间距 */
+.doc-page__summary.doc-page__prose p {
+  margin: 0;
+}
+
+.doc-page__prose strong,
+.doc-page__prose b {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.doc-page__prose em {
+  font-style: italic;
+}
+
+.doc-page__prose {
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.doc-page__prose a {
+  color: var(--link-prose);
+  text-decoration: underline;
+  text-decoration-color: #a3a3a3;
+  text-underline-offset: 3px;
+}
+
+.doc-page__prose a:hover {
+  color: var(--link-prose-hover);
+  text-decoration-color: currentColor;
+}
+
+.doc-page__prose h1 {
+  display: none;
+}
+
+.doc-page__prose h2 {
+  margin: 36px 0 12px;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.doc-page__prose h3 {
+  margin: 24px 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text);
+}
+
+.doc-page__prose p,
+.doc-page__prose ul,
+.doc-page__prose ol,
+.doc-page__prose blockquote,
+.doc-page__prose table {
+  margin: 12px 0;
+}
+
+.doc-page__prose p,
+.doc-page__prose li,
+.doc-page__prose td,
+.doc-page__prose th,
+.doc-page__prose blockquote {
+  color: var(--text-muted);
+}
+
+.doc-page__prose ul,
+.doc-page__prose ol {
+  padding-left: 1.25em;
+}
+
+.doc-page__prose li + li {
+  margin-top: 6px;
+}
+
+.doc-page__prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.doc-page__prose th,
+.doc-page__prose td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+
+.doc-page__prose th {
+  color: var(--text);
+  background: var(--bg-muted);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.doc-page__prose tr:last-child td {
+  border-bottom: none;
+}
+
+.doc-page__inline-code {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: var(--code-bg);
+  color: var(--text);
+  font-size: 0.9em;
+  border: 1px solid var(--line);
+}
+
+.doc-page__code-block {
+  margin: 16px 0;
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  background: var(--code-bg);
+  color: var(--text);
+  font: 13px/1.65 var(--font-mono);
+}
+
+.doc-page__code-block code,
+.doc-page__code-block .doc-page__inline-code {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font-size: inherit;
+}
+
+.doc-page__prose blockquote {
+  padding-left: 14px;
+  border-left: 2px solid var(--line-strong);
+  color: var(--text-muted);
+}
+
+.doc-page__pager {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.doc-page__pager-link {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: var(--radius-lg);
+  background: var(--bg-muted);
+  border: 1px solid var(--line);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.doc-page__pager-link--next {
+  text-align: right;
+}
+
+.doc-page__pager-link:hover {
+  color: var(--text);
+  border-color: var(--line-strong);
+  background: var(--bg);
+}
+
+.doc-page__pager-label {
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+@media (max-width: 1180px) {
+  .doc-page {
+    grid-template-columns: minmax(0, 720px);
+    justify-content: center;
+  }
+
+  .doc-page__aside {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .doc-page {
+    padding-top: 20px;
+  }
+
+  .doc-page__title {
+    font-size: 26px;
+  }
+
+  .doc-page__summary {
+    font-size: 15px;
+  }
+
+  .doc-page__pager {
+    grid-template-columns: 1fr;
+  }
+}

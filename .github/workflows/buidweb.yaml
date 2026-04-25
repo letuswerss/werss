@@ -1,0 +1,30 @@
+name: Build and Deploy Vite Project
+on:
+  workflow_call:
+    inputs:
+      target:
+        required: true
+        type: string
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code 
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.18.3' # 替换为你的项目所需的 Node.js 版本
+      - name: Install dependencies
+        working-directory: ./web_ui
+        run: yarn install
+      - name: Build project
+        working-directory: ./web_ui
+        run: yarn build
+      - name: Deploy to GitHub Pages
+        uses: crazy-max/ghaction-github-pages@v3
+        with:
+          target_branch: gh-pages # 替换为你的部署分支名称
+          build_dir: web_ui/dist # 构建输出目录
+        env:
+          GITHUB_TOKEN:  ${{secrets.TOKEN}}

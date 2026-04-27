@@ -4,15 +4,14 @@
 
 ## 📋 工作流概览
 
-项目包含以下 7 个自动化工作流：
+项目包含以下 6 个自动化工作流：
 
 | 工作流文件 | 功能 | 触发条件 |
 |-----------|------|---------|
 | `base_os.yaml` | 构建 Python 3.8 基础镜像 | 推送到 main，且 `Dockerfiles/py38/Dockerfile` 变化 |
 | `buidweb.yaml` | 构建并部署前端到 GitHub Pages | 被其他工作流调用 |
 | `docker_hub.yaml` | 构建并推送到 Docker Hub | 推送到 main，且相关文件变化 |
-| `docker-publish.yaml` | 构建并推送到 GHCR（可选腾讯云） | 推送到 main，且相关文件变化 |
-| `docker-tencent.yaml` | 构建并推送到腾讯云容器镜像服务 | 推送到 main 或手动触发 |
+| `docker-publish.yaml` | 构建并推送到 GitHub Container Registry | 推送到 main，且相关文件变化 |
 | `issues.yaml` | Issue 自动回复 | Issue 被添加标签 |
 | `release.yaml` | 创建 GitHub Release | 推送版本标签（v*.*.*） |
 
@@ -92,12 +91,11 @@
 
 ---
 
-### 4. docker-publish.yaml - 推送到 GitHub Container Registry（支持腾讯云）
+### 4. docker-publish.yaml - 推送到 GitHub Container Registry
 
 **功能：**
 - 构建多架构 Docker 镜像（amd64 + arm64）
 - 推送到 GitHub Container Registry
-- 如果配置了腾讯云 secrets，同时推送到腾讯云容器镜像服务
 
 **触发条件：**
 - 推送到 `main` 分支
@@ -109,76 +107,19 @@
   - `requirements.txt`
 
 **所需 Secrets：**
-
-**必需：**
 - `TOKEN`: GitHub Personal Access Token（需要 `write:packages` 权限）
-
-**可选（推送到腾讯云）：**
-- `TENCENT_REGISTRY_USERNAME`: 腾讯云容器镜像服务用户名
-- `TENCENT_REGISTRY_PASSWORD`: 腾讯云容器镜像服务密码或访问令牌
-- `TENCENT_REGISTRY`: 腾讯云镜像仓库地址（默认：`ccr.ccs.tencentyun.com`）
-- `TENCENT_IMAGE_NAMESPACE`: 腾讯云命名空间（默认：`default`）
 
 **输出镜像：**
 - `ghcr.io/<repository>:latest`（GitHub Container Registry）
-- `ccr.ccs.tencentyun.com/<namespace>/werss:latest`（腾讯云，如果配置了）
 
 **特性：**
 - 多架构支持（amd64 + arm64）
 - GitHub Actions 缓存加速构建
 - 自动生成镜像标签和元数据
-- 智能判断是否推送到腾讯云（如果配置了 secrets）
 
 ---
 
-### 5. docker-tencent.yaml - 推送到腾讯云容器镜像服务
-
-**功能：**
-- 使用 `Dockerfile.cn`（国内镜像源版本）构建镜像
-- 构建多架构 Docker 镜像（amd64 + arm64）
-- 推送到腾讯云容器镜像服务
-- 自动生成多个标签（latest、分支名、SHA 等）
-
-**触发条件：**
-- 推送到 `main` 分支（且指定文件变化）
-- 或手动触发（`workflow_dispatch`）
-
-**文件变化触发：**
-- `ReadMe.md`
-- `README.zh-CN.md`
-- `core/ver.py`
-- `Dockerfile`
-- `Dockerfile.cn`
-- `requirements.txt`
-
-**所需 Secrets：**
-
-**必需：**
-- `TENCENT_REGISTRY_USERNAME`: 腾讯云容器镜像服务用户名
-- `TENCENT_REGISTRY_PASSWORD`: 腾讯云容器镜像服务密码或访问令牌
-
-**可选：**
-- `TENCENT_REGISTRY`: 镜像仓库地址（默认：`ccr.ccs.tencentyun.com`）
-  - 旧版：`ccr.ccs.tencentyun.com`
-  - 新版：`mirror.ccs.tencentyun.com`
-- `TENCENT_IMAGE_NAMESPACE`: 镜像命名空间（默认：`default`）
-
-**输出镜像：**
-- `ccr.ccs.tencentyun.com/<namespace>/werss:latest`
-- `ccr.ccs.tencentyun.com/<namespace>/werss:<branch>-<sha>`
-
-**特性：**
-- 使用国内镜像源，构建速度更快
-- 多架构支持（amd64 + arm64）
-- GitHub Actions 缓存加速构建
-- 支持手动触发
-- 自动生成多个标签
-
-**详细配置请参考：** [README-TENCENT.md](./README-TENCENT.md)
-
----
-
-### 6. issues.yaml - Issue 自动回复
+### 5. issues.yaml - Issue 自动回复
 
 **功能：**
 - 当 Issue 被标记为 `help wanted` 时，自动添加欢迎评论
@@ -195,7 +136,7 @@
 
 ---
 
-### 7. release.yaml - 版本发布
+### 6. release.yaml - 版本发布
 
 **功能：**
 - 创建 GitHub Release
@@ -265,18 +206,6 @@ git push origin v1.0.0
 4. 输入描述，选择权限（Read & Write）
 5. 复制生成的 token
 
-#### 4. TENCENT_REGISTRY_USERNAME 和 TENCENT_REGISTRY_PASSWORD
-
-**用途：** 推送到腾讯云容器镜像服务
-
-**创建步骤：**
-1. 登录 [腾讯云控制台](https://console.cloud.tencent.com/)
-2. 进入「容器镜像服务」或「容器服务」
-3. 创建命名空间和镜像仓库
-4. 在「访问管理」中创建 API 密钥，或使用镜像仓库的访问凭证
-
-**详细配置请参考：** [README-TENCENT.md](./README-TENCENT.md)
-
 ---
 
 ## 🚀 使用示例
@@ -289,23 +218,7 @@ git push origin v1.0.0
 4. 工作流 `docker-publish.yaml` 自动触发
 5. 镜像推送到 `ghcr.io/<repository>:latest`
 
-### 示例 2：推送到腾讯云
-
-1. 配置腾讯云相关 secrets（见 [README-TENCENT.md](./README-TENCENT.md)）
-2. 修改 `Dockerfile.cn` 或相关文件
-3. 推送到 `main` 分支
-4. 工作流 `docker-tencent.yaml` 自动触发
-5. 镜像推送到腾讯云容器镜像服务
-
-### 示例 3：手动触发构建
-
-1. 进入 GitHub 仓库的 `Actions` 标签页
-2. 选择 `Build and Push to Tencent Cloud Container Registry`
-3. 点击 `Run workflow`
-4. 选择分支，点击 `Run workflow`
-5. 工作流开始执行
-
-### 示例 4：创建版本发布
+### 示例 2：创建版本发布
 
 ```bash
 # 1. 创建版本标签
@@ -330,8 +243,7 @@ git push origin v1.0.0
 │   │
 │   ├── Dockerfile / requirements.txt 等
 │   │   ├── docker_hub.yaml（推送到 Docker Hub + GHCR）
-│   │   ├── docker-publish.yaml（推送到 GHCR + 可选腾讯云）
-│   │   └── docker-tencent.yaml（推送到腾讯云）
+│   │   └── docker-publish.yaml（推送到 GHCR）
 │   │
 │   └── web_ui/ 相关文件
 │       └── buidweb.yaml（被其他工作流调用）
@@ -352,7 +264,6 @@ git push origin v1.0.0
 `docker_hub.yaml` 和 `docker-publish.yaml` 可能同时触发，建议：
 - 如果只需要推送到 GitHub Container Registry，只使用 `docker-publish.yaml`
 - 如果需要推送到 Docker Hub，使用 `docker_hub.yaml`
-- 如果需要推送到腾讯云，使用 `docker-tencent.yaml` 或配置 `docker-publish.yaml` 的腾讯云 secrets
 
 ### 2. 使用缓存加速构建
 
@@ -361,23 +272,6 @@ git push origin v1.0.0
 - `cache-to: type=gha,mode=max`
 
 第二次构建会显著加快。
-
-### 3. 手动触发
-
-`docker-tencent.yaml` 支持手动触发（`workflow_dispatch`），适合：
-- 测试构建流程
-- 按需构建特定版本
-- 修复构建问题后重新构建
-
-### 4. 条件执行
-
-`docker-publish.yaml` 中的腾讯云推送使用了条件判断：
-```yaml
-if: ${{ secrets.TENCENT_REGISTRY_USERNAME != '' && secrets.TENCENT_REGISTRY_PASSWORD != '' }}
-```
-只有在配置了腾讯云 secrets 时才会推送到腾讯云。
-
----
 
 ## 🔍 故障排查
 
@@ -390,7 +284,6 @@ if: ${{ secrets.TENCENT_REGISTRY_USERNAME != '' && secrets.TENCENT_REGISTRY_PASS
 2. **检查权限**
    - GitHub token 需要有足够的权限
    - Docker Hub token 需要有推送权限
-   - 腾讯云凭证需要有推送权限
 
 3. **查看日志**
    - 进入 `Actions` 标签页
@@ -416,14 +309,12 @@ if: ${{ secrets.TENCENT_REGISTRY_USERNAME != '' && secrets.TENCENT_REGISTRY_PASS
    - 确保缓存没有被清理
 
 2. **使用国内镜像源**
-   - `docker-tencent.yaml` 使用 `Dockerfile.cn`，构建更快
-   - 其他工作流可以使用 `Dockerfile.cn` 替代 `Dockerfile`
+   - 可本地或自建流水线使用 `Dockerfile.cn` 加速构建
 
 ---
 
 ## 📚 相关文档
 
-- [腾讯云容器镜像服务配置指南](./README-TENCENT.md)
 - [GitHub Actions 官方文档](https://docs.github.com/en/actions)
 - [Docker Buildx 文档](https://docs.docker.com/buildx/)
 - [GitHub Container Registry 文档](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
@@ -456,7 +347,6 @@ if: ${{ secrets.TENCENT_REGISTRY_USERNAME != '' && secrets.TENCENT_REGISTRY_PASS
 
 ## 📝 更新日志
 
-- **2024-12-20**: 添加腾讯云容器镜像服务支持
 - **2024-12-20**: 更新所有工作流使用最新版本的 Actions
 - **2024-12-20**: 添加构建缓存支持
 - **2024-12-20**: 优化工作流配置，支持条件执行

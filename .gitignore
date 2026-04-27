@@ -35,8 +35,7 @@ env/
 # 本地误拷/备份的整仓副本，勿跟踪
 werss-sync/
 
-# Mac mini 本地部署文件（个人专用，不提交）
-docker-compose.mac.yml
+# 旧版 Mac 部署已并入 ../deploy 仓库，本地若仍留备份勿提交
 .env.mac
 feeds_export.json
 init-db/create-dbs.sql

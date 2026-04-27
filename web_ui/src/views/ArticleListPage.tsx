@@ -1283,11 +1283,13 @@ const ArticleListPage: React.FC = () => {
       </Dialog>
 
       <Drawer open={articleModalVisible} onOpenChange={setArticleModalVisible}>
-        <DrawerContent className="h-[80vh] max-h-[90vh]">
-          <DrawerHeader>
-            <DrawerTitle id="article-reader-title">{currentArticle?.title || ''}</DrawerTitle>
+        <DrawerContent className="!mt-6 flex h-[min(90vh,100dvh)] max-h-[95vh] flex-col overflow-hidden p-0 sm:max-w-2xl sm:mx-auto">
+          <DrawerHeader className="shrink-0 space-y-1 border-b border-border px-4 pb-3 pt-2 text-left">
+            <DrawerTitle id="article-reader-title" className="pr-2 leading-snug line-clamp-3">
+              {currentArticle?.title || ''}
+            </DrawerTitle>
           </DrawerHeader>
-          <div className="px-4 pb-8 overflow-auto flex-1 min-h-0">
+          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-4 pb-6">
             {articleDetailLoading ? (
               <div className="flex justify-center py-16">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -1321,10 +1323,45 @@ const ArticleListPage: React.FC = () => {
                     {t('articles.reader.nextArticle')}
                   </button>
                 </div>
-                <div
-                  className="max-w-none text-foreground [&_img]:max-w-full [&_img]:h-auto"
-                  dangerouslySetInnerHTML={{ __html: (currentArticle as any).content || '' }}
-                />
+                {(() => {
+                  // content 在 viewArticle 里已做 processedArticleHtml，此处直接渲染
+                  const html = (currentArticle as any).content != null ? String((currentArticle as any).content) : ''
+                  const hasBody = html.replace(/&nbsp;|\s/g, '').length > 0
+                  const desc = (currentArticle as any).description
+                  if (hasBody) {
+                    return (
+                      <div
+                        className="max-w-none break-words rounded-md border border-zinc-200 bg-white px-3 py-4 text-left text-neutral-900 shadow-sm [&_img]:max-w-full [&_img]:h-auto"
+                        // 与 App 亮/暗无关：微信正文多为浅色内联样式，统一用纸感白底，避免暗色主题下整段「消失」
+                        dangerouslySetInnerHTML={{ __html: html }}
+                      />
+                    )
+                  }
+                  if (desc && String(desc).replace(/\s/g, '').length > 0) {
+                    return (
+                      <div className="space-y-3 text-sm text-muted-foreground">
+                        <p className="text-amber-600 dark:text-amber-500">
+                          正文未入库，以下为摘要/描述。完整正文可点「{t('articles.reader.viewOriginal')}」，或使用接口重新拉取正文。
+                        </p>
+                        <div
+                          className="max-w-none break-words rounded-md border bg-muted/40 p-3 text-foreground"
+                          style={{ color: 'var(--foreground)' }}
+                          dangerouslySetInnerHTML={{ __html: String(desc) }}
+                        />
+                      </div>
+                    )
+                  }
+                  return (
+                    <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+                      <p className="mb-2">当前没有可展示的正文（数据库中该篇 content 为空）。</p>
+                      <p>
+                        可点击上方「{t('articles.reader.viewOriginal')}」阅读；或确认采集已拉取全文。管理员可调用
+                        <code className="mx-1 rounded bg-muted px-1">POST /api/v1/wx/articles/…/fetch_content</code>
+                        重拉正文后刷新本页。
+                      </p>
+                    </div>
+                  )
+                })()}
               </>
             ) : null}
           </div>

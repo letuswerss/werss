@@ -111,6 +111,12 @@ def _missing_tags_worker(job_id: str, article_ids: List[str]) -> None:
                     j["success_count"] = success_count
                     j["error_count"] = error_count
 
+        try:
+            from core.cache import clear_cache_pattern
+            clear_cache_pattern("articles:")
+        except Exception:
+            pass
+
         with _MISSING_TAG_JOBS_LOCK:
             j = _MISSING_TAG_JOBS.get(job_id)
             if j:
@@ -258,6 +264,12 @@ async def re_extract_tags(
                     results.append({"article_id": article_id, "error": str(e)})
                     from core.print import print_error
                     print_error(f"重新提取标签失败 [文章ID: {article_id}]: {e}")
+
+            try:
+                from core.cache import clear_cache_pattern
+                clear_cache_pattern("articles:")
+            except Exception:
+                pass
 
             return success_response({
                 "success_count": success_count,

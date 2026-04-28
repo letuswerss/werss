@@ -132,6 +132,11 @@ async def add_article_tag(
         db.add(article_tag)
         db.commit()
         db.refresh(article_tag)
+        try:
+            from core.cache import clear_cache_pattern
+            clear_cache_pattern("articles:")
+        except Exception:
+            pass
         
         return success_response(data={
             "article_id": article_id,
@@ -178,6 +183,11 @@ async def delete_article_tag(
         # 删除关联
         db.delete(article_tag)
         db.commit()
+        try:
+            from core.cache import clear_cache_pattern
+            clear_cache_pattern("articles:")
+        except Exception:
+            pass
         
         return success_response(message="标签关联删除成功")
     except Exception as e:

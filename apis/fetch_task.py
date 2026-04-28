@@ -18,6 +18,16 @@ from .base import error_response, success_response
 router = APIRouter(prefix="/fetch_tasks", tags=["抓取任务"])
 
 
+def _reload_fetch_jobs_after_change():
+    """DB 变更后同步 APScheduler；失败不回滚已提交数据，仅打日志。"""
+    try:
+        from jobs.fetch_task_job import reload_fetch_jobs
+
+        reload_fetch_jobs()
+    except Exception as e:
+        print_error(f"抓取任务已保存但调度器重载失败: {e}")
+
+
 class FetchTaskCreate(BaseModel):
     name: str = ""
     mps_id: str = "[]"
@@ -100,6 +110,7 @@ async def create_fetch_task(
         db.add(row)
         db.commit()
         db.refresh(row)
+        _reload_fetch_jobs_after_change()
         return success_response(data=row)
     except Exception as e:
         db.rollback()
@@ -140,6 +151,7 @@ async def update_fetch_task(
         row.updated_at = datetime.now()
         db.commit()
         db.refresh(row)
+        _reload_fetch_jobs_after_change()
         return success_response(data=row)
     except HTTPException:
         raise
@@ -157,6 +169,7 @@ async def delete_fetch_task(task_id: str, current_user: dict = Depends(get_curre
             raise HTTPException(status_code=404, detail="Fetch task not found")
         db.delete(row)
         db.commit()
+        _reload_fetch_jobs_after_change()
         return success_response(message="Fetch task deleted")
     except HTTPException:
         raise

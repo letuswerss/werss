@@ -105,7 +105,14 @@ const ArticleListPage: React.FC = () => {
   const [articleDetailLoading, setArticleDetailLoading] = useState(false)
   const exportModalRef = React.useRef<any>(null)
   const aiFilterControlRef = useRef<'running' | 'paused' | 'stopped'>('running')
+  const articleModalVisibleRef = useRef(articleModalVisible)
+  const currentArticleRef = useRef<Article | null>(null)
   const { toast } = useToast()
+
+  useEffect(() => {
+    articleModalVisibleRef.current = articleModalVisible
+    currentArticleRef.current = currentArticle
+  }, [articleModalVisible, currentArticle])
 
   const loadMpList = async () => {
     try {
@@ -307,6 +314,29 @@ const ArticleListPage: React.FC = () => {
     }
   }
 
+  /** 标签等变更后刷新已打开的阅读抽屉（列表走 loadArticles；详情无列表缓存但可合并 tag_names） */
+  const refreshOpenArticleDetail = async () => {
+    if (!articleModalVisibleRef.current || !currentArticleRef.current) return
+    const art = currentArticleRef.current
+    setArticleDetailLoading(true)
+    try {
+      const res = await getArticleDetail(art.id as any, 0)
+      const articleData = (res as any)?.data || res
+      if (articleData) {
+        setCurrentArticle({
+          ...art,
+          ...articleData,
+          mp_name: articleData.mp_name || art.mp_name,
+          content: processedArticleHtml(articleData),
+        } as Article)
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setArticleDetailLoading(false)
+    }
+  }
+
   const handleEdit = (article: Article) => {
     setEditingArticle(article)
     setEditFormData({ title: article.title || '', description: (article as any).description || '', url: article.link || (article as any).url || '', pic_url: (article as any).pic_url || '' })
@@ -396,7 +426,8 @@ const ArticleListPage: React.FC = () => {
             } else {
               toast({ title: t('common.success'), description: d.message || t('articles.tagExtract.success') })
             }
-            loadArticles()
+            await loadArticles()
+            await refreshOpenArticleDetail()
             break
           }
         }
@@ -428,7 +459,8 @@ const ArticleListPage: React.FC = () => {
       const res = await reExtractTags(payload)
       const data = (res as any)?.data || res
       toast({ title: t('common.success'), description: data?.message || t('articles.tagExtract.success') })
-      loadArticles()
+      await loadArticles()
+      await refreshOpenArticleDetail()
       if (tagExtractKind === 'selected') setSelectedRowKeys([])
       setTagExtractOpen(false)
       setTagExtractKind(null)

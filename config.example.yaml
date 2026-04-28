@@ -93,12 +93,12 @@ article:
     batch_size: ${ARTICLE_RETENTION_BATCH_SIZE:-300}
 
 gather:
-  #是否采集内容  默认False
-  content: ${GATHER.CONTENT:-False}
+  # 是否采集正文入库；私有部署常用 True。若需合规/最小采集可设 GATHER_CONTENT=False
+  content: ${GATHER.CONTENT:-True}
   #采集模式，web模式（可采集到发布链接)，api模式（可采集临时链接），app模式（采集最新消息）
   model: ${GATHER.MODEL:-app}
-  #是否自动检查未采集文章内容，默认False
-  content_auto_check: ${GATHER.CONTENT_AUTO_CHECK:-False}
+  # 是否定时补全「尚无正文」的文章（依赖 ENABLE_JOB 与 -job）；关则仅新抓取的文章按 content 开关采正文
+  content_auto_check: ${GATHER.CONTENT_AUTO_CHECK:-True}
   #自动检查未采集文章内容的时间间隔 单位秒默认59分钟 允许值 1-59分钟之间 默认59分钟
   content_auto_interval: ${GATHER.CONTENT_AUTO_INTERVAL:-59}
   #内容修正模式，默认web 允许值 web、api
@@ -134,8 +134,8 @@ export:
 article_tag:
   # 是否自动根据公众号关联的标签打标签
   auto_assign_by_mp: ${ARTICLE_TAG_AUTO_ASSIGN_BY_MP:-True}
-  # 是否自动提取标签（基于文章内容）
-  auto_extract: ${ARTICLE_TAG_AUTO_EXTRACT:-False}
+  # 是否自动提取标签（基于文章内容）；默认开启（需配置 OpenAI 兼容 API，失败仅打日志不影响入库）
+  auto_extract: ${ARTICLE_TAG_AUTO_EXTRACT:-True}
   # 标签提取方式：ai（OpenAI 兼容 API）
   extract_method: ${ARTICLE_TAG_EXTRACT_METHOD:-ai}
   # 提取标签的最大数量

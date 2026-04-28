@@ -161,13 +161,15 @@ class Config:
                             # 如果原始名称不存在，尝试将点号转换为下划线
                             env_var_name = var_name.replace('.', '_')
                             env_value = os.getenv(env_var_name)
-                        # 如果环境变量存在，使用环境变量的值；否则使用默认值
-                        if env_value is not None:
+                        # ${VAR:-default}：与 shell 一致，未设置或为空/仅空白时使用 default
+                        if default_value is not None:
+                            if env_value is None or str(env_value).strip() == "":
+                                return default_value
                             return env_value
-                        elif default_value is not None:
-                            return default_value
-                        else:
-                            return ''
+                        # ${VAR}：无 :- 默认值时，未定义则为空串，否则保留原值（可为空串）
+                        if env_value is None:
+                            return ""
+                        return env_value
                     return pattern.sub(replace_match, data)
                 except:
                     return data

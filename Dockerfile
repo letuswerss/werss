@@ -1,3 +1,6 @@
+# syntax=docker/dockerfile:1.4
+# BuildKit：DOCKER_BUILDKIT=1 docker compose build（或默认已开启）以使用 RUN --mount=type=cache
+
 # 多阶段构建：第一阶段 - 前端构建
 FROM --platform=$BUILDPLATFORM node:20.18.0-slim AS frontend-builder
 
@@ -10,9 +13,10 @@ RUN npm install -g pnpm
 # 复制前端依赖文件
 COPY web_ui/package.json web_ui/pnpm-lock.yaml* web_ui/
 
-# 安装前端依赖
+# 安装前端依赖（BuildKit 缓存 pnpm store，加速重复构建）
 WORKDIR /app/web_ui
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
 
 # 复制前端源代码
 COPY web_ui/ .
@@ -50,9 +54,22 @@ COPY requirements.txt .
 # 安装 uv 包管理器（用于快速安装 Python 依赖）
 RUN pip install uv --no-cache-dir
 
-# 安装 Python 依赖（在构建时安装，避免运行时问题）
-RUN uv pip install --system -r requirements.txt || \
+# 安装 Python 依赖（缓存 wheel；仅 requirements 变更时重跑）
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --system -r requirements.txt || \
     pip install -r requirements.txt
+
+# 安装 Playwright 浏览器：放在「复制业务代码」之前，仅 requirements/浏览器类型变更才重跑本层。
+# 注意：勿把浏览器装到 RUN --mount=type=cache 目录，否则缓存不会写入镜像层，运行时会缺浏览器。
+ARG BROWSER_TYPE=firefox
+ENV BROWSER_TYPE=${BROWSER_TYPE} \
+    PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT=300000
+RUN export PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT=300000 && \
+    ( export PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright && \
+      python3 -m playwright install ${BROWSER_TYPE} --with-deps || \
+      ( echo "npmmirror 失败，改用官方 CDN..." && \
+        PLAYWRIGHT_DOWNLOAD_HOST=https://playwright.azureedge.net python3 -m playwright install ${BROWSER_TYPE} --with-deps ) \
+    ) || (echo "Playwright 浏览器安装失败，将在运行时安装" && true)
 
 # 复制后端代码（排除 web_ui，因为前端已经构建完成）
 COPY config.example.yaml config.yaml
@@ -73,20 +90,6 @@ COPY start.sh .
 
 # 从第一阶段复制前端构建产物
 COPY --from=frontend-builder /app/web_ui/dist ./static
-
-# 安装 Playwright 浏览器（Docker 环境默认安装）
-# 注意：Playwright 是 Python 包，需要先安装 Python 依赖
-# 使用 ARG 接收构建参数，ENV 设置运行时环境变量
-ARG BROWSER_TYPE=firefox
-ENV BROWSER_TYPE=${BROWSER_TYPE} \
-    PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT=300000
-# PLAYWRIGHT_BROWSERS_PATH 在运行时由 install.sh 设置
-RUN export PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT=300000 && \
-    ( export PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright && \
-      python3 -m playwright install ${BROWSER_TYPE} --with-deps || \
-      ( echo "npmmirror 失败，改用官方 CDN..." && \
-        PLAYWRIGHT_DOWNLOAD_HOST=https://playwright.azureedge.net python3 -m playwright install ${BROWSER_TYPE} --with-deps ) \
-    ) || (echo "Playwright 浏览器安装失败，将在运行时安装" && true)
 
 # 设置脚本权限
 RUN chmod +x install.sh start.sh

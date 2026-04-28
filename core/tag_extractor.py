@@ -19,10 +19,11 @@ DEFAULT_TAG_EXTRACT_PROMPT_TEMPLATE = """请从以下文章中提取 {{max_tags}
 【重要要求】：
 1. **必须提取公司名称**：如果文章提到公司，公司名称必须包含在标签中
 2. 标签词必须**具体且有区分度**，避免通用词汇
-3. 避免提取：AI、大语言模型、云计算、机器学习、技术、产品等过于宽泛的词
-4. 每个标签词 2-15 个字（公司名称可以更长）
-5. 按重要性排序（公司名称通常最重要）
-6. 只返回 JSON 数组格式，不要包含任何解释或思考过程
+3. 避免**单独**使用过于宽泛的词作为唯一标签（如仅「人工智能」「技术」「产品」）；但若文章讨论具体公司/产品/活动，必须写出其**具体名称**，即使该领域与 AI 相关
+4. **禁止**返回空数组：至少从标题与摘要中给出 1～{{max_tags}} 个可聚类的具体标签（公司名、活动名、产品名、榜单主题等均可）
+5. 每个标签词 2-5 个中文字符（英文公司名称可以更长）
+6. 按重要性排序（公司名称通常最重要）
+7. 只返回 JSON 数组格式，不要包含任何解释或思考过程
 
 【好的示例】：
 - 好："字节跳动"、"豆包视频"、"Seedance 1.5"、"火山引擎"、"Anthropic"、"Claude"、"诺贝尔奖"、"Crossplane"、"快手OneRec"、"李彦宏"、"DeepSeek"、"英伟达"、"NVIDIA"
@@ -44,6 +45,18 @@ except ImportError:
 
 # 全局单例实例，用于常驻内存
 _global_extractor = None
+
+
+def _coerce_parsed_to_tag_list(parsed: object) -> Optional[list]:
+    """兼容模型返回纯数组或 {\"tags\": [...]} 等形式。"""
+    if isinstance(parsed, list):
+        return parsed
+    if isinstance(parsed, dict):
+        for key in ("tags", "keywords", "labels", "data", "result"):
+            v = parsed.get(key)
+            if isinstance(v, list):
+                return v
+    return None
 
 
 class TagExtractor:
@@ -288,7 +301,8 @@ class TagExtractor:
                     {"role": "user", "content": prompt}
                 ],
                 "temperature": 0.2,
-                "max_tokens": 300,  # 增加token限制，确保能提取更多标签
+                # DeepSeek v4 等会把「思考」计入 reasoning_content；过小会导致 content 为空且解析失败
+                "max_tokens": 1024,
             }
 
             # 如果是 Qwen3 模型，添加禁用思考的参数
@@ -301,11 +315,37 @@ class TagExtractor:
 
             response = await self.ai_client.chat.completions.create(**api_params)
 
-            result = response.choices[0].message.content
-            if result is None:
-                logger.error("AI 返回内容为空")
+            choice = response.choices[0]
+            msg = choice.message
+            raw = msg.content
+            if raw is None:
+                raw = ""
+            else:
+                raw = str(raw).strip()
+
+            md = msg.model_dump() if hasattr(msg, "model_dump") else {}
+            reasoning = md.get("reasoning_content") or ""
+            if isinstance(reasoning, str):
+                reasoning = reasoning.strip()
+            else:
+                reasoning = ""
+
+            if not raw and reasoning:
+                raw = reasoning
+                logger.info(
+                    "标签提取：message.content 为空，已改用 reasoning_content 解析（常见于 DeepSeek 等推理字段）"
+                )
+
+            if choice.finish_reason == "length":
+                logger.warning(
+                    "标签提取：因 max_tokens 截断结束（finish_reason=length），已尽量从正文或推理文本中解析 JSON"
+                )
+
+            if not raw:
+                logger.error("AI 返回内容为空（content 与 reasoning_content 均无有效文本）")
                 return []
-            result = result.strip()
+
+            result = raw
 
             # 处理可能包含 reasoning 标签的情况（如 o1 系列模型）
             import re
@@ -314,14 +354,13 @@ class TagExtractor:
             # 移除各种 reasoning 标签及其内容（包括没有闭合标签的情况）
             reasoning_patterns = [
                 r'<thinkstrip>.*?</thinkstrip>',
+                r'<thinkstrip>.*?(?=\[|\{|$)',
+                r'<think>.*?</think>',
+                r'<think>.*?(?=\[|\{|$)',
                 r'<thinking>.*?</thinking>',
+                r'<thinking>.*?(?=\[|\{|$)',
                 r'<reasoning>.*?</reasoning>',
-                r'<thinkstrip>.*?</thinkstrip>',
-                # 处理没有闭合标签的情况（匹配到文件末尾或下一个标签）
-                r'<thinkstrip>.*?(?=\[|$)',
-                r'<thinking>.*?(?=\[|$)',
-                r'<reasoning>.*?(?=\[|$)',
-                r'<thinkstrip>.*?(?=\[|$)',
+                r'<reasoning>.*?(?=\[|\{|$)',
             ]
             for pattern in reasoning_patterns:
                 result = re.sub(pattern, '', result, flags=re.DOTALL)
@@ -331,10 +370,32 @@ class TagExtractor:
             if not result:
                 result = original_result
 
-            # 尝试直接解析 JSON
+            # 模型常把 JSON 包在 markdown 代码块里
+            fence_m = re.search(
+                r"```(?:json)?\s*\r?\n([\s\S]*?)\r?\n```",
+                result,
+                re.IGNORECASE,
+            )
+            if fence_m:
+                try:
+                    parsed = json.loads(fence_m.group(1).strip())
+                    tags = _coerce_parsed_to_tag_list(parsed)
+                    if tags is not None:
+                        cleaned_tags = [
+                            tag.strip()
+                            for tag in tags
+                            if isinstance(tag, str) and tag.strip()
+                        ]
+                        if cleaned_tags:
+                            return cleaned_tags[:max_tags]
+                except json.JSONDecodeError:
+                    pass
+
+            # 尝试直接解析 JSON（数组或 {"tags": [...]}）
             try:
-                tags = json.loads(result)
-                if isinstance(tags, list):
+                parsed = json.loads(result)
+                tags = _coerce_parsed_to_tag_list(parsed)
+                if tags is not None:
                     cleaned_tags = [
                         tag.strip()
                         for tag in tags
@@ -342,7 +403,10 @@ class TagExtractor:
                     ]
                     if cleaned_tags:
                         return cleaned_tags[:max_tags]
-                    logger.warning("AI 返回了空标签数组")
+                    logger.warning(
+                        "AI 返回了空标签数组，原始响应前 800 字符: %s",
+                        (original_result[:800] if original_result else ""),
+                    )
                     return []
             except json.JSONDecodeError:
                 pass
@@ -360,12 +424,11 @@ class TagExtractor:
                 for match in reversed(matches):
                     try:
                         candidate = match.group()
-                        tags = json.loads(candidate)
-                        if isinstance(tags, list) and len(tags) > 0:
-                            # 验证标签格式：应该是字符串列表
+                        tags = _coerce_parsed_to_tag_list(json.loads(candidate))
+                        if tags and len(tags) > 0:
                             if all(isinstance(tag, str) and len(tag.strip()) > 0 for tag in tags):
                                 return tags[:max_tags]
-                    except (json.JSONDecodeError, AttributeError):
+                    except (json.JSONDecodeError, AttributeError, TypeError):
                         continue
 
             # 如果还是失败，尝试查找包含引号的数组模式（更宽松）
@@ -375,10 +438,10 @@ class TagExtractor:
             if matches:
                 for match in reversed(matches):
                     try:
-                        tags = json.loads(match.group())
-                        if isinstance(tags, list) and len(tags) > 0:
+                        tags = _coerce_parsed_to_tag_list(json.loads(match.group()))
+                        if tags and len(tags) > 0:
                             return tags[:max_tags]
-                    except:
+                    except (json.JSONDecodeError, TypeError):
                         continue
 
             logger.error(f"AI 提取 JSON 解析失败，原始响应前500字符: {original_result[:500]}")

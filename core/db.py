@@ -483,6 +483,11 @@ class Db:
             # ==========================================
             
             sta=session.commit()
+            try:
+                from core.cache import clear_cache_pattern
+                clear_cache_pattern("articles:")
+            except Exception:
+                pass
             
         except Exception as e:
             # 处理各种数据库的唯一约束错误
